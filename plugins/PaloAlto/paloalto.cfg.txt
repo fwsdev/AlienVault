@@ -1,0 +1,123 @@
+;; Palo Alto Firewall
+;; plugin_id: 1615 
+
+;; Log Example, csv format, comma separated:
+;; Palo Alto Firewall sorted fields, check regex for more details :
+;;
+;; - type
+;; - subtype
+;; - config version
+;; ? config version date
+;; - source
+;; - destination
+;; - NAT source
+;; - NAT destination
+;; - rule
+;; - source user
+;; - destination user
+;; - application
+;; - vsys
+;; - from
+;; - to
+;; - inbound interface
+;; - outbound interface
+;; - log set
+;; - source port
+;; - destination port
+;; - NAT source port
+;; - NAT destination port
+;; - flags
+;; - protocol
+;; - action
+;; - page
+;; - threatid
+;; - category
+;; - severity
+;; - direction
+
+
+[DEFAULT]
+plugin_id=1615
+
+
+[config]
+type=detector
+enable=yes
+
+source=log
+location=/var/log/paloalto.log
+
+# create log file if it does not exists, 
+# otherwise stop processing this plugin
+create_file=false
+
+process=
+start=no
+stop=no
+startup=
+shutdown=
+
+exclude_sids=1,2
+
+
+[translation]
+TRAFFIC,start=1
+TRAFFIC,end=2
+TRAFFIC,drop=3
+TRAFFIC,deny=4
+CONFIG,0=11
+SYSTEM,general=21
+_DEFAULT_=99
+THREAT,url=5
+THREAT,vulnerability=6
+
+[00_PaloAlto_Threat]
+#JS
+event_type=event
+precheck="THREAT"
+regexp="(?P<date>\w{3}\s+\d{1,2}\s\d\d:\d\d:\d\d) (?P<device>\S+)\s+[^,]+,[^,]+,(?P<serial>[^,]+),(?P<type>[^,]+,[^,]+),[^,]+,[^,]+,(?P<src>[^,]+),(?P<dst>[^,]+),(?P<srcnat>[^,]+),(?P<dstnat>[^,]+),(?P<rule>[^,]+),(?P<user>[^,]+)?,(?P<userdst>[^,]+)?,(?P<app>[^,]+),(?P<vsys>[^,]+),(?P<srczone>[^,]+),(?P<dstzone>[^,]+),(?P<inint>[^,]+),(?P<outint>[^,]+),(?P<logaction>[^,]+),(?P<time>[^,]+),(?P<sessionid>[^,]+),(?P<count>[^,]+),(?P<srcport>[^,]+),(?P<dstport>[^,]+),(?P<srcportnat>[^,]+),(?P<dstportnat>[^,]+),(?P<flags>[^,]+),(?P<protocol>[^,]+),(?P<action>[^,]+),(?P<misc>[^,]+),(?P<threat>[^,]+),(?P<category>[^,]+),(?P<severity>[^,]+),(?P<direction>[^,]+),(?P<seqno>[^,]+),(?P<actflags>[^,]+),(?P<srccountry>[^,]+),(?P<dstcountry>[^,]+),(?P<cpadding>[^,]+),(?P<contenttype>[^,]+)?,"
+date={normalize_date($date)}
+device={resolv($device)}
+plugin_sid={translate($type)}
+src_ip={$src}
+src_port={$srcport}
+dst_ip={$dst}
+dst_port={$dstport}
+protocol={$protocol}
+username={$user}
+filename={$misc}
+userdata1={Count: $count, Action: $action, Dest User: $userdst}
+userdata2={NAT - SrcPort: $srcportnat, DstPort: $dstportnat}
+userdata3={$threat}
+userdata4={$category}
+userdata5={$severity}
+userdata6={$app}
+userdata7={NAT - SrcIP: $srcnat, DstIP: $dstnat}
+userdata8={$rule}
+userdata9={Country - Src: $srccountry, Dst: $dstcountry}
+
+
+[01_PaloAlto_Generic_Rule]
+event_type=event
+regexp=(?P<date>\SYSLOG_DATE) (?P<sensor>\S+)\s+([^,]*),([^,]*),([^,]*),(?P<type>[^,]*,[^,]*),([^,]*),([^,]*),(?P<src>[^,]*),(?P<dst>[^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),(?P<app>[^,]*),(?P<vsys>[^,]*),(?P<from>[^,]*),(?P<to>[^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),(?P<sport>[^,]*),(?P<dport>[^,]*),([^,]*),(?P<proto>[^,]*),(?P<action>[^,]*)
+date={normalize_date($date)}
+device={resolv($sensor)}
+plugin_sid={translate($type)}
+src_ip={$src}
+src_port={$sport}
+dst_ip={$dst}
+dst_port={$dport}
+protocol={$proto}
+userdata2={$app}
+userdata3={$from}
+userdata4={$to}
+userdata5={$action}
+
+[02_PaloAlto_Generic_Rule]
+event_type=event
+regexp=(?P<date>\SYSLOG_DATE) (?P<sensor>\S+)\s+([^,]*),([^,]*),([^,]*),(?P<type>[^,]*,[^,]*),([^,]*),([^,]*),(?P<src>[^,]*),(?P<dst>[^,]*)
+date={normalize_date($date)}
+device={resolv($sensor)}
+plugin_sid={translate($type)}
+src_ip={$src}
+dst_ip={$dst}
