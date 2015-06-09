@@ -1,0 +1,56 @@
+
+# Alienvault plugin
+# Author: av
+# Plugin huawei id:90902 version: 0.0.1
+# Last modification: 2015-03-30
+#
+# Accepted products:
+# Huawei
+
+[DEFAULT]
+plugin_id=90902
+
+[config]
+type=detector
+enable=yes
+
+source=log
+location=/var/log/huawei.log
+
+create_file=false
+
+process=
+start=no
+stop=no
+startup=
+shutdown=
+
+[translation]
+DEFD/4/CPCAR_DROP_MPU=1
+HWCM/4/EXIT=2
+IFNET/4/IF_STATE=3
+NTP/4/PACKET_LENGTH_WRONG=4
+SHELL/4/TELNETFAILED=5
+SNMP/4/COMMUNITY_ERR=6
+
+
+[00010 - huawei with src-ip]
+event_type=event
+regexp=(?P<date>\w+\s+\d+\s+\d+\s+\d+:\d+:\d+)[^\s]+\s+(?P<device>[^\s]+\s+)%%01(?P<sid>[^\(]+)[^:]+:(?P<info>[^\(]+\(Ip=(?P<srcip>[^,]+),.*)
+date={normalize_date($date)}
+device={resolv($device)}
+dst_ip={resolv($device)}
+src_ip={$srcip}
+plugin_sid={translate($sid)}
+userdata1={$info}
+
+
+
+[00999 - huawei default event]
+event_type=event
+regexp=(?P<date>\w+\s+\d+\s+\d+\s+\d+:\d+:\d+)[^\s]+\s+(?P<device>[^\s]+\s+)%%01(?P<sid>[^\(]+)[^:]+:(?P<info>.*)
+date={normalize_date($date)}
+device={resolv($device)}
+dst_ip={resolv($device)}
+plugin_sid={translate($sid)}
+userdata1={$info}
