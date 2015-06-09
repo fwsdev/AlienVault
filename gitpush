@@ -1,0 +1,8 @@
+#!/bin/bash
+# My example bash script
+git add *
+git commit -m "fwsdev"
+git push origin master
+
+
+
